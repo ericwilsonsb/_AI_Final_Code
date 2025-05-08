@@ -2,6 +2,7 @@
 
 
 import numpy as np
+import torch
 
 class Circuit:
 
@@ -75,7 +76,6 @@ class Circuit:
         lines.append(f"comp_var = {self.comp_var}")
         lines.append("-------------------------------------------------\n")
 
-
         return "\n".join(lines)
 
 
@@ -84,6 +84,21 @@ class Circuit:
     def compute_freq(self):
         # return True
         return np.arange( int(self.f_start), int(self.f_end + self.f_step), int(self.f_step) )
+    
+
+
+
+    def elements_2_tensor(self) -> torch.tensor:
+
+        params = torch.from_numpy(
+                        self.elements[[1, 0]]  # swap rows: capacitors, inductors
+                        .T                        # transpose to shape (5,2)
+                        .reshape(-1)              # flatten to 10‑element vector
+                        ).to(torch.float32)       # LadderS21 expects float32
+
+        return params
+
+
     
 
     
