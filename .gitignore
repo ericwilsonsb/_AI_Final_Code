@@ -9,3 +9,5 @@ z_Report_LaTex/AI_Final_Project_Report.blg
 z_Report_LaTex/AI_Final_Project_Report.fdb_latexmk
 z_Report_LaTex/AI_Final_Project_Report.fls
 z_Report_LaTex/AI_Final_Project_Report.log
+EE_utils/__pycache__/electrical.cpython-312.pyc
+EE_utils/__pycache__/electrical_sim.cpython-312.pyc

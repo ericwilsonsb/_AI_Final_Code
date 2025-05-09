@@ -9,7 +9,7 @@ import torch
 
 # import importlib
 import sys
-sys.path.append('../Functions/')
+sys.path.append('../EE_utils/')
 import electrical as EE # type: ignore
 # importlib.reload(EE)
 import electrical_sim as EE_sim # type: ignore
