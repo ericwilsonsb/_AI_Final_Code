@@ -365,92 +365,39 @@ This data was saved to files using the pickle python package for quick loading i
 
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Model Training Details}
+
+
+Scaling Model Inputs and Outputs:
+
+Originally, I used the MSELoss() function to compute the error between the ideal component values and the inferred values. I had much more successes computing the mean square percentage due to the values being larger and easier to understand. Additionally, I convert the filter frequency response data to dB so that the model doesn't need to contend with such a large dynamic range. Using dB also aligns with standard practice in EE.
+
+\vspace{1em}
+
+
+The original proposed training approach involved two stages:
+\begin{enumerate}[label=\arabic*)]
+    \item Training with perfect Chebyshev filters (with loss calculated from component value error)
+    \item Once a baseline of performance is reached more randomly varied filters are introduced into training data (eases model into designs different from perfect Chebyshev)
+    \item Finally, Switch to loss calculated from difference of filter frequency responses (not the actual circuit element values)
+    	\subitem this allows understanding of which components values are more sensitive to filter freq. response
+\end{enumerate}
+
+\vspace{1em}
+
+The rationale behind having training datasets with different levels of randomness is to "teach" the model with simple consistent data first (the clean, non-altered data) and then once the model is partially established start introducing more random data.
+
+By training only perfect Chebyshev filters to start, the model can benefit from a pre-established way of thinking without having to start from scratch. It is then hoped the randomly varied filters will allow the model to "understand" the sensitivity of each component in the circuit. 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Evaluation of Method}
 
-This paper demostrates that MLP based models can perform extremely well at circuit design of analog filters with arbitrarly defined frequency responeses. 
 
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Problem Statement}
-
-
-
-
-
-
-My class presentation covered the recent developments in RF and microwave circuit design methods using AI. The basics of the RF design process were explained, and the potential for limited AI assistance at each step was briefly discussed \cite{lee2024icdesign}. Next, the distinction between parameter optimization and topological design was made. \cite{xue2023mmic} was used to demonstrate AI's ability to balance the many parameters required in an RF design whose topology is fixed. Then, the topological AI design algorithms described in \cite{xu2024microwave, karahan2024rfdesign, taskiran2024annsynthesis} were described and methods compared. Particular attention was paid to the wavelet transform used in \cite{xu2024microwave} and how it aids in inverse mapping. Additionally, the two-step learning method and fully connected layer dropout operations in \cite{karahan2024rfdesign} was discussed in depth.
-
-My class project on the other hand involves training my own AI model which takes in circuit performance as an input (i.e. frequency vs. magnitude/phase values) and generates the circuit element values in a ladder topology to reach the desired performance. With a ladder topology circuit design (of high enough order) almost any circuit response can be generated, but choosing each circuit element's type and location in the network is complex. This is a great application of AI because it is easy to calculate the performance of a design, but difficult to determine which values are needed to achieve the circuit characteristics that are desired. The values that are determined by the AI can be compared with standard human design methods such as filter prototypes and scaling using G-coefficients.
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Background}
-
-Understanding the standard methods designers use for filter synthesis is critical to evaluating whether using AI for filter design is actually an advantage. The basics of filter synthesis is described below.
-
-In analog filter design the unbalanced-ladder topology for circuit design is often used. Figure~\ref{Ladder_Topology_3rd_order} shows two versions of a 3rd order ladder circuit.
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.9\linewidth]{Figures/Ladder_Topology_3rd_order.png}
-	\caption{3rd order ladder representation: comes in series element first or shunt element first.}
-	\label{Ladder_Topology_3rd_order}
-\end{figure}
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Project Progress}
-
-I wrote a program that calculates the G-coefficients for Butterworth and Chebyshev filters using the recursive equations above. I also wrote the scripts that scale those G-coefficients to get electrical component values for inductors and capacitors. Finally, I wrote a circuit simulator that has been checked against actual circuit simulator to verify accuracy. Figure~\ref{Chebyshev_G_coefs} shows the G-coefficients calculated for Chebyshev filter prototypes of different orders.
-
-
-I also wrote scripts which simulates the filter circuit to measure its frequency response. The results of my circuit simulator were compared against a commercial microwave circuit simulator (Microwave Office AWR). Figure~\ref{MATLAB_vs_AWR_2} shows that my simulated filter performance exactly aligns with the commercial solver.
-
-These scripts will be used to generate the training data and the circuit simulator will also be used to evaluate model performance.
-
-
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.9\linewidth]{Figures/Chebyshev_G_coefs.png}
-	\caption{Computed Chebyshev G-coefficients. These values have been verified against other sources.}
-	\label{Chebyshev_G_coefs}
-\end{figure}
-
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.9\linewidth]{Figures/MATLAB_vs_AWR_2.png}
-	\caption{S21 of a bandpass filter simulated with AWR and my own script. Notice the very zoomed in vertical axis to accurately measure the filter passband ripple. My circuit simulator lines up exactly with the commercial solver.}
-	\label{MATLAB_vs_AWR_2}
-\end{figure}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Project Scope}
-
-
-For this project a ladder topology of 6 circuit elements is chosen over a 100x frequency bandwidth. Each circuit element has the following options: open, short, resistor, capacitor, inductor, series LC, or shunt LC. Many randomly generated circuit designs will be generated and performance calculated over the frequency range. This data will be used to train the model. The performance of the model will be based on how well it can design a circuit to match desired performance.
-
-
-
-
-
-
+In the end amazing filter design accuracy was achieved using an MLP that took 1000 values in (each corresponding the S21 in dB) and generating 10 circuit element parameters out. The final testing loss 0.001\% percent error in the calculated circuit element values after 2000 epochs taking around 2 minutes to train. See figure~\ref{Learning_Curve_1} for the training loss curves.
 
 
 
@@ -460,6 +407,8 @@ For this project a ladder topology of 6 circuit elements is chosen over a 100x f
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A program has been written that can calculate the G-coefficients for Butterworth and Chebyshev filters. More scripts have been written that can scale those G-coefficients to get electrical component values for inductors and capacitors. Finally, I wrote a circuit simulator that has been checked against actual circuit simulator to verify accuracy. These scripts will be used to generate the training data and the circuit simulator will also be used to evaluate model performance.
+
+By understanding the different aspects and limitation of ANN like different training methods, data scaling to minize dynamic range, etc. I created a model which can accuratly generate 10th order analog filters to meet the specications of a near arbitrary desired frequency repseonse.
 
 
 
