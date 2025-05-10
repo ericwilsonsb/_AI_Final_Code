@@ -157,7 +157,12 @@ This project specifically tackles the design of 5th-order unbalanced ladder filt
 Figure~\ref{Ladder_Topology_3rd_order} shows a 3rd order filter topology. For this design, each element of the ladder is made up of a capacitor and inductor. The series elements are made up of a series LC and the shunt elements are composed of a parallel LC. This means there are 10 different electrical component values to select for the filter design.
 
 
-
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Ladder_Topology_3rd_order.png}
+	\caption{3rd order ladder representation: comes in series element first or shunt element first.}
+	\label{Ladder_Topology_3rd_order}
+\end{figure}
 
 
 
@@ -397,8 +402,17 @@ By training only perfect Chebyshev filters to start, the model can benefit from 
 \section{Evaluation of Method}
 
 
-In the end amazing filter design accuracy was achieved using an MLP that took 1000 values in (each corresponding the S21 in dB) and generating 10 circuit element parameters out. The final testing loss 0.001\% percent error in the calculated circuit element values after 2000 epochs taking around 2 minutes to train. See figure~\ref{Learning_Curve_1} for the training loss curves.
+In the end amazing filter design accuracy was achieved using an MLP that took 1000 values in (each corresponding the S21 in dB) and generating 10 circuit element parameters out. The final testing loss 0.001\% percent error in the calculated circuit element values after 2000 epochs taking around 2 minutes to train. See figure~\ref{MLP_Loss_Curves_1} for the training loss curves.
 
+
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/MLP_Loss_Curves_1.png}
+	\caption{Notice MLP reaches error well below 1\% of theoretical component values. It should be noted many electrical components have a tolerance of +/-1\%}
+	\label{MLP_Loss_Curves_1}
+\end{figure}
 
 
 
@@ -408,7 +422,7 @@ In the end amazing filter design accuracy was achieved using an MLP that took 10
 \section{Conclusion}
 A program has been written that can calculate the G-coefficients for Butterworth and Chebyshev filters. More scripts have been written that can scale those G-coefficients to get electrical component values for inductors and capacitors. Finally, I wrote a circuit simulator that has been checked against actual circuit simulator to verify accuracy. These scripts will be used to generate the training data and the circuit simulator will also be used to evaluate model performance.
 
-By understanding the different aspects and limitation of ANN like different training methods, data scaling to minize dynamic range, etc. I created a model which can accuratly generate 10th order analog filters to meet the specications of a near arbitrary desired frequency repseonse.
+By understanding the different aspects and limitation of ANN like different training methods, data scaling to minimize dynamic range, etc. I created a model which can accurately generate 10th order analog filters to meet the speciations of a near arbitrary desired frequency response.
 
 
 

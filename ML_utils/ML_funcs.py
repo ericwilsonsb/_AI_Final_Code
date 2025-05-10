@@ -204,7 +204,10 @@ def train_model(train_dl, val_dl,
             # plt.pause(0.1)
 
 
-    return model
+    # return hist_val
+
+
+    return model, hist_train, hist_val
 
 
 
