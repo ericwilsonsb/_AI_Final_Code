@@ -17,7 +17,7 @@ class Circuit:
         self.s_params = np.nan  # s-parameters
         
         # freq data (Hz)
-        self.f_start = 0
+        self.f_start = 0.1e9
         self.f_end = 5e9
         self.f_step = 5e6
 

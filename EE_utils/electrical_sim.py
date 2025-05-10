@@ -16,7 +16,7 @@ class LadderS21(nn.Module):
 
     def __init__(self, z0=50.0, n_pts=1000, f_max=5e9):
         super().__init__()
-        f = torch.linspace(0.0, f_max, n_pts)          # Hz
+        f = torch.linspace(0.1e9, f_max, n_pts)          # Hz
         self.register_buffer("freq", f)                # shape (F,)
         self.z0 = float(z0)
 

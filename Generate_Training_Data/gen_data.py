@@ -56,7 +56,7 @@ def gen_cheby_data(num_filters: int = 1000, num_f_pts: int = 1000, comp_var: flo
 
     s21_db = data_S21_dB_CUDA.to("cpu").numpy()
 
-    return tensor_designs, s21_db
+    return tensor_designs.numpy(), s21_db
 
 
 
@@ -95,4 +95,4 @@ def gen_rand_data(num_filters: int = 1000, num_f_pts: int = 1000, comp_val_min: 
 
     s21_db = data_S21_dB_CUDA.to("cpu").numpy()
 
-    return tensor_designs, s21_db
+    return tensor_designs.numpy(), s21_db

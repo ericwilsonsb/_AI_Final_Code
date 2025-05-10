@@ -126,35 +126,87 @@ AI in Analog Design, Filter Synthesis, G-coefficients, Filter prototypes, Elemen
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Problem Statement}
+\section{Description of Problem}
 
-My class presentation covered the recent developments in RF and microwave circuit design methods using AI. The basics of the RF design process were explained, and the potential for limited AI assistance at each step was briefly discussed \cite{lee2024icdesign}. Next, the distinction between parameter optimization and topological design was made. \cite{xue2023mmic} was used to demonstrate AI's ability to balance the many parameters required in an RF design whose topology is fixed. Then, the topological AI design algorithms described in \cite{xu2024microwave, karahan2024rfdesign, taskiran2024annsynthesis} were described and methods compared. Particular attention was paid to the wavelet transform used in \cite{xu2024microwave} and how it aids in inverse mapping. Additionally, the two-step learning method and fully connected layer dropout operations in \cite{karahan2024rfdesign} was discussed in depth.
 
-My class project on the other hand involves training my own AI model which takes in circuit performance as an input (i.e. frequency vs. magnitude/phase values) and generates the circuit element values in a ladder topology to reach the desired performance. With a ladder topology circuit design (of high enough order) almost any circuit response can be generated, but choosing each circuit element's type and location in the network is complex. This is a great application of AI because it is easy to calculate the performance of a design, but difficult to determine which values are needed to achieve the circuit characteristics that are desired. The values that are determined by the AI can be compared with standard human design methods such as filter prototypes and scaling using G-coefficients.
+Analog filters are used in many electronic devices to block unwanted power at specific frequencies from entering the system. Cell phones, radios and radar systems all use analog filters in the front end to prevent out of band frequencies from compressing sensitive receive electronics (leading to degraded performance). There are some closed form methods for computing filter component values, BUT they are limited to very basic filter shapes (like low-pass, high-pass, symmetric bandpass) AND almost always require a skilled human designer to tune the values afterward. Additionally, the closed form filter synthesis methods cannot easily account for higher-order real-world effects which have a big impact on component value selection. These higher order effects include uninteded coupling between circuit elements, component parasitics, and propagation delays for high-frequency distrubuted circuits.
+
+\vspace{1em}
+
+\textbf{The problem:}
+Existing closed form filter synthesis methods are limited to very basic filter shapes, do not account for impactful higher order effects, and require significant time for human designers to tweak values by trial and error.
+
+\vspace{1em}
+
+\textbf{Overall Goal of Paper:}
+Make progress towards a machine learning (ML) model that can:
+\begin{enumerate}[label=\arabic*)]
+    \item generate filters with much more arbitrary frequency responses (not just simple low-pass, symmetric bandpass, etc.),
+    \item accurately account for the higher-order effects which closed-form solutions ignore,
+    \item significantly decrease the amount of human tuning required by generating more accurate component values.
+\end{enumerate}
+
+\vspace{1em}
+
+\textbf{Specific Project Scope:}
+This project specifically tackles the design of 5th-order unbalanced ladder filters with series element first. The user gives model the desired filter frequency response (can be arbitrary shape), and the model designs a working filter.
+
+Figure~\ref{Ladder_Topology_3rd_order} shows a 3rd order filter topology. For this design, each element of the ladder is made up of a capacitor and inductor. The series elements are made up of a series LC and the shunt elements are composed of a parallel LC. This means there are 10 different electrical component values to select for the filter design.
+
+
+
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Background}
+\section{Description of Approach}
 
-Understanding the standard methods designers use for filter synthesis is critical to evaluating whether using AI for filter design is actually an advantage. The basics of filter synthesis is described below.
+To achieve the overall project goal the following approach was taken. Each entry has its own sub-section:
+\begin{enumerate}[label=\arabic*)]
+    \item \textcolor{blue}{Research existing attempts at ML based circuit designers}
+    \item \textcolor{blue}{Learn and implement the standard closed form filter synthesis methods *}
+    \item \textcolor{blue}{Develop method to quickly evaluate circuit performance AND verify against commercial circuit solvers **}
+    \item \textcolor{blue}{Generate Training Data}
+    \item \textcolor{blue}{Model Training Details}
+    	\subitem Importance of criterion selection
+		\subitem Multi-Step Training Program to significantly increase training speed
+\end{enumerate}
 
-In analog filter design the unbalanced-ladder topology for circuit design is often used. Figure~\ref{Ladder_Topology_3rd_order} shows two versions of a 3rd order ladder circuit.
+* This is critical for publishing a paper in the future. Many of the machine learning papers on circuit design DO NOT compare against standard circuit design methods and lack sufficient electrical engineering expertise. The lack of standard EE knowledge is a large hole in the current literature as of 2025.
 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.9\linewidth]{Figures/Ladder_Topology_3rd_order.png}
-	\caption{3rd order ladder representation: comes in series element first or shunt element first.}
-	\label{Ladder_Topology_3rd_order}
-\end{figure}
+** generating sufficient data can be expensive in microwave design
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Research existing attempts at ML based circuit designers}
+
+Existing work on ML based circuit designers can be broken into parameter design vs. topological design. Parameter designs have the AI only choose component values for a pre-chosen circuit, whereas in ML topological design the AI generates the entire circuit with very little human guidance.
+
+
+My class presentation and survey essay go into depth on the recent ML microwave design literature published in 2023 \- 2025. In those submissions the basics of the RF design process are explained, and the potential for limited AI assistance at each step is briefly discussed \cite{lee2024icdesign}. Next, the distinction between parameter optimization and topological design is made. \cite{xue2023mmic} was used to demonstrate AI's ability to balance the many parameters required in an RF design whose topology is fixed. Then, the topological AI design algorithms described in \cite{xu2024microwave, karahan2024rfdesign, taskiran2024annsynthesis} are described and methods compared. Particular attention is paid to the wavelet transform used in \cite{xu2024microwave} and how it aids in inverse mapping. Additionally, the two-step learning method and fully connected layer dropout operations in \cite{karahan2024rfdesign} was discussed in depth.
+
+
+Some key items to note are:
+\begin{enumerate}[label=\arabic*)]
+    \item Collecting the required amount of training data is very difficult for microwave designs because the most accurate electromagnetic simulators are extremely compute intensive.
+    \item Many of the AI topological design papers involve training a model which quickly evaluates circuit performance with very little compute, this model is then used to guide an evolutionary algorithm which explores the design space.
+    \item This project takes the reverse approach of generating a model which directly generates the filter design, instead of using an evolutionary algorithm to search through many different designs every time the user asks for a new filter synthesis.
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Learn and implement the standard closed form filter synthesis methods}
+
+One of the standard methods used for filter synthesis involves calculating a table of values called G-coefficients which define a prototype filter. It is called a prototype filter because its cuttoff frequency is 1~rad/sec. The G-coefficients must be specifically scaled and altered to achieve a different cuttoff frequency and/or to switch filter response shape (e.g. low pass, high pass, bandpass). Different families of filters can be synthesized by using a wide range of complicated recursive formulas. The Butterworth and Chebyshev filter styles are common place in the filter synthesis world.
+
+Why this matters: Many of the existing ML microwave design papers discuss performance of circuits the AI generates, but the authors do not analyze the results against standard methods. For example, in \cite{karahan2024rfdesign} they discuss how amazing it is the AI designed an electrically small patch antenna, but they don't mention antenna efficiency or that electrically small antennas is an entire field of study which has defined upper bound limits of antenna performance for a specific size. \cite{karahan2024rfdesign} is one of the best ML microwave papers as of 2025, but it severely lacks sufficient EE background.
+
+Below the method of computing Butterworth and Chebyshev filter coefficients is described.
 
 
 
 For standard filter synthesis there are several commonly used designs which dictate where the poles and zeros of the filter lie. Butterworth and Chebyshev filters are common and are synthesized as follows.
-
-
-
 
 
 
@@ -228,6 +280,82 @@ $~$
 	\end{equation}
 
 \end{quote}
+
+
+
+
+
+
+A significant amount of time went into writing the code to compute the G-coefficients and to scale the values to get a standard filter design. 
+
+I wrote a program that calculates the G-coefficients for Butterworth and Chebyshev filters using the recursive equations above. I also wrote the scripts that scale those G-coefficients to get electrical component values for inductors and capacitors. Finally, I wrote a circuit simulator that has been checked against actual circuit simulator to verify accuracy. Figure~\ref{Chebyshev_G_coefs} shows the G-coefficients calculated for Chebyshev filter prototypes of different orders.
+
+
+I also wrote scripts which simulates the filter circuit to measure its frequency response. The results of my circuit simulator were compared against a commercial microwave circuit simulator (Microwave Office AWR). Figure~\ref{MATLAB_vs_AWR_2} shows that my simulated filter performance exactly aligns with the commercial solver. Notice the precise alignment between the commercial solver (AWR) and my own circuit simulator script. It was critical to write the circuit solver so that it could run on the GPU for fast simulation time and so that an ML model training on the GPU could easily differentiate through the weights of the circuit solver. This allows the training ML model to have its loss calculated off of the error of circuit element values OR the difference in the input frequency resonse versus the generated circuit's simulated frequency response. The difference between these methods is further discussed below.
+
+
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Chebyshev_G_coefs.png}
+	\caption{Computed Chebyshev G-coefficients. These values have been verified against other sources.}
+	\label{Chebyshev_G_coefs}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/MATLAB_vs_AWR_2.png}
+	\caption{S21 of a bandpass filter simulated with AWR and my own script. Notice the very zoomed in vertical axis to accurately measure the filter passband ripple. My circuit simulator lines up exactly with the commercial solver.}
+	\label{MATLAB_vs_AWR_2}
+\end{figure}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Evaluation of Method}
+
+This paper demostrates that MLP based models can perform extremely well at circuit design of analog filters with arbitrarly defined frequency responeses. 
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem Statement}
+
+
+
+
+
+
+My class presentation covered the recent developments in RF and microwave circuit design methods using AI. The basics of the RF design process were explained, and the potential for limited AI assistance at each step was briefly discussed \cite{lee2024icdesign}. Next, the distinction between parameter optimization and topological design was made. \cite{xue2023mmic} was used to demonstrate AI's ability to balance the many parameters required in an RF design whose topology is fixed. Then, the topological AI design algorithms described in \cite{xu2024microwave, karahan2024rfdesign, taskiran2024annsynthesis} were described and methods compared. Particular attention was paid to the wavelet transform used in \cite{xu2024microwave} and how it aids in inverse mapping. Additionally, the two-step learning method and fully connected layer dropout operations in \cite{karahan2024rfdesign} was discussed in depth.
+
+My class project on the other hand involves training my own AI model which takes in circuit performance as an input (i.e. frequency vs. magnitude/phase values) and generates the circuit element values in a ladder topology to reach the desired performance. With a ladder topology circuit design (of high enough order) almost any circuit response can be generated, but choosing each circuit element's type and location in the network is complex. This is a great application of AI because it is easy to calculate the performance of a design, but difficult to determine which values are needed to achieve the circuit characteristics that are desired. The values that are determined by the AI can be compared with standard human design methods such as filter prototypes and scaling using G-coefficients.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Background}
+
+Understanding the standard methods designers use for filter synthesis is critical to evaluating whether using AI for filter design is actually an advantage. The basics of filter synthesis is described below.
+
+In analog filter design the unbalanced-ladder topology for circuit design is often used. Figure~\ref{Ladder_Topology_3rd_order} shows two versions of a 3rd order ladder circuit.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Ladder_Topology_3rd_order.png}
+	\caption{3rd order ladder representation: comes in series element first or shunt element first.}
+	\label{Ladder_Topology_3rd_order}
+\end{figure}
+
+
 
 
 
